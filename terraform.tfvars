@@ -6,4 +6,7 @@ environment = "dev"
 
 # VPC
 cidr     = "10.100.0.0/20"
-az_count = 1
+az_count = 2
+
+# EKS Cluster
+cluster_version = "1.34"

@@ -43,3 +43,44 @@ output "availability_zones" {
   description = "List of Availability Zones"
   value       = module.vpc.azs
 }
+
+# EKS Cluster
+output "cluster_id" {
+  description = "Cluster ID"
+  value       = module.eks.cluster_id
+}
+
+output "cluster_endpoint" {
+  description = "Endpoint API Kubernetes"
+  value       = module.eks.cluster_endpoint
+}
+
+output "cluster_ca_certificate" {
+  description = "Cluster Certificate Authority Data"
+  value       = module.eks.cluster_certificate_authority_data
+}
+
+output "cluster_iam_role_arn" {
+  description = "Cluster IAM Role ARN"
+  value       = module.eks.cluster_iam_role_name
+}
+
+output "node_groups" {
+  description = "EKS Managed Node Groups"
+  value       = module.eks.eks_managed_node_groups
+}
+
+output "fargate_profiles" {
+  description = "EKS Fargate Profiles"
+  value       = module.eks.fargate_profiles
+}
+
+output "node_security_group_id" {
+  description = "EKS Node Security Group ID"
+  value       = module.eks.node_security_group_id
+}
+
+output "oidc_issuer_url" {
+  description = "EKS OIDC Issuer URL"
+  value       = module.eks.cluster_oidc_issuer_url
+}

@@ -26,3 +26,9 @@ variable "az_count" {
   type        = number
   description = "The number of Availability Zones to use"
 }
+
+# EKS Cluster
+variable "cluster_version" {
+  type        = string
+  description = "The Kubernetes version for the EKS cluster"
+}
