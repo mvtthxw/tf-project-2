@@ -1,0 +1,90 @@
+{
+  "name": "tf-project-2 (Terraform / EKS / Helm / PHP)",
+  "image": "mcr.microsoft.com/devcontainers/base:jammy",
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": true,
+      "installDockerBuildx": true
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.15.2"
+    },
+    "ghcr.io/devcontainers/features/aws-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "kubectl": "latest",
+      "minikube": "none"
+    },
+    "ghcr.io/devcontainers/features/php:1": {
+      "version": "8.3",
+      "installComposer": true
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "hashicorp.terraform",
+        "hashicorp.hcl",
+        "redhat.vscode-yaml",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "ms-azuretools.vscode-containers",
+        "amazonwebservices.aws-toolkit-vscode",
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-debug",
+        "EditorConfig.editorconfig",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[terraform]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true
+        },
+        "[terraform-vars]": {
+          "editor.defaultFormatter": "hashicorp.terraform"
+        },
+        "[hcl]": {
+          "editor.defaultFormatter": "hashicorp.terraform"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "redhat.vscode-yaml"
+        },
+        "yaml.schemas": {
+          "https://json.schemastore.org/helmfile.json": [
+            "helmfile.yaml",
+            "helmfile.yml"
+          ],
+          "kubernetes": [
+            "**/charts/**/templates/**/*.yaml",
+            "**/charts/**/templates/**/*.yml"
+          ]
+        },
+        "files.associations": {
+          "*.tmpl.hcl": "terraform"
+        }
+      }
+    }
+  },
+
+  // "forwardPorts": [8080, 8443],
+  // "portsAttributes": {
+  //   "8080": {
+  //     "label": "PHP / app (optional)",
+  //     "onAutoForward": "silent"
+  //   }
+  // },
+
+  "runArgs": [
+    "--env-file=${localEnv:HOME}/Documents/.env"
+  ],
+
+  "postCreateCommand": "terraform -version && kubectl version --client=true --output=yaml | head -n 5 && helm version && php -v && docker --version",
+  "remoteUser": "vscode"
+}
