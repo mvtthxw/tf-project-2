@@ -1,0 +1,86 @@
+# VPC
+output "vpc_id" {
+  description = "VPC ID"
+  value       = module.vpc.vpc_id
+}
+
+output "vpc_cidr_block" {
+  description = "CIDR VPC"
+  value       = module.vpc.vpc_cidr_block
+}
+
+output "public_subnets" {
+  description = "List of public subnets"
+  value       = module.vpc.public_subnets
+}
+
+output "private_subnets" {
+  description = "List of private subnets"
+  value       = module.vpc.private_subnets
+}
+
+output "nat_gateway_ids" {
+  description = "List of NAT Gateway IDs"
+  value       = module.vpc.natgw_ids
+}
+
+output "internet_gateway_id" {
+  description = "ID Internet Gateway"
+  value       = module.vpc.igw_id
+}
+
+output "public_route_table_ids" {
+  description = "List of public route table IDs"
+  value       = module.vpc.public_route_table_ids
+}
+
+output "private_route_table_ids" {
+  description = "List of private route table IDs"
+  value       = module.vpc.private_route_table_ids
+}
+
+output "availability_zones" {
+  description = "List of Availability Zones"
+  value       = module.vpc.azs
+}
+
+# EKS Cluster
+output "cluster_id" {
+  description = "Cluster ID"
+  value       = module.eks.cluster_id
+}
+
+output "cluster_endpoint" {
+  description = "Endpoint API Kubernetes"
+  value       = module.eks.cluster_endpoint
+}
+
+output "cluster_ca_certificate" {
+  description = "Cluster Certificate Authority Data"
+  value       = module.eks.cluster_certificate_authority_data
+}
+
+output "cluster_iam_role_arn" {
+  description = "Cluster IAM Role ARN"
+  value       = module.eks.cluster_iam_role_name
+}
+
+output "node_groups" {
+  description = "EKS Managed Node Groups"
+  value       = module.eks.eks_managed_node_groups
+}
+
+output "fargate_profiles" {
+  description = "EKS Fargate Profiles"
+  value       = module.eks.fargate_profiles
+}
+
+output "node_security_group_id" {
+  description = "EKS Node Security Group ID"
+  value       = module.eks.node_security_group_id
+}
+
+output "oidc_issuer_url" {
+  description = "EKS OIDC Issuer URL"
+  value       = module.eks.cluster_oidc_issuer_url
+}
