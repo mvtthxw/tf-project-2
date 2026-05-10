@@ -1,0 +1,14 @@
+services:
+  app-managed:
+    build:
+      context: ./app-managed
+    ports:
+      - "8081:80"
+
+  app-fargate:
+    build:
+      context: ./app-fargate
+    environment:
+      PARAMS_STORE: "LOCAL VALUE"
+    ports:
+      - "8082:80"

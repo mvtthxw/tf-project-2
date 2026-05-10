@@ -5,9 +5,9 @@
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
-      "moby": true,
-      "installDockerBuildx": true
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false,
+      "installDockerBuildx": false
     },
     "ghcr.io/devcontainers/features/terraform:1": {
       "version": "1.15.2"
@@ -73,16 +73,24 @@
     }
   },
 
-  // "forwardPorts": [8080, 8443],
-  // "portsAttributes": {
-  //   "8080": {
-  //     "label": "PHP / app (optional)",
-  //     "onAutoForward": "silent"
-  //   }
-  // },
+  "forwardPorts": [8081, 8082],
+  "portsAttributes": {
+    "8081": {
+      "label": "app-managed (PHP)",
+      "onAutoForward": "notify"
+    },
+    "8082": {
+      "label": "app-fargate (PHP)",
+      "onAutoForward": "notify"
+    }
+  },
 
   "runArgs": [
     "--env-file=${localEnv:HOME}/Documents/.env"
+  ],
+
+  "mounts": [
+    "source=cursor-state-tf-project-2,target=/home/vscode/.cursor,type=volume"
   ],
 
   "postCreateCommand": "terraform -version && kubectl version --client=true --output=yaml | head -n 5 && helm version && php -v && docker --version",
