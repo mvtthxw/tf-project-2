@@ -5,8 +5,8 @@
     <title>App Fargate</title>
 </head>
 <body>
-    <h1>Param Store V1</h1>
-    <h1>Hello from App Fargate v1.0.0</h1>
+    <h1>Param Store</h1>
+    <h1>Hello from App Fargate <?= htmlspecialchars(is_readable('/etc/app/version') ? trim(file_get_contents('/etc/app/version')) : 'dev') ?></h1>
     <p>Container: <?= htmlspecialchars(gethostname()) ?></p>
     <p>Param Store:
         <?php

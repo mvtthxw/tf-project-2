@@ -1,6 +1,6 @@
 # Development
 
-This repository is set up to be opened inside a **Dev Container**. All required tooling (Terraform, AWS CLI, kubectl, Helm, PHP, Docker-in-Docker, GitHub CLI) is installed automatically by the container image, so you don't need to install anything locally except a code editor and a container runtime.
+This repository is set up to be opened inside a **Dev Container**. All required tooling (Terraform, AWS CLI, kubectl, Helm, PHP, Python, Docker-in-Docker, GitHub CLI) is installed automatically by the container image, so you don't need to install anything locally except a code editor and a container runtime.
 
 ## Prerequisites
 
@@ -78,20 +78,48 @@ If you need to change credentials, edit `~/Documents/.env` and rebuild the conta
 3. Open the repo folder in VS Code or Cursor.
 4. Run the command **Dev Containers: Reopen in Container** (or **Rebuild and Reopen in Container** if it's the first time / after changing `devcontainer.json`).
 
-After the container builds, a `postCreateCommand` runs and prints the versions of `terraform`, `kubectl`, `helm`, `php` and `docker` as a sanity check. If you see all five, the environment is ready.
+After the container builds, a `postCreateCommand` runs and prints the versions of `terraform`, `kubectl`, `helm`, `php` and `docker` as a sanity check. If you see all five, the environment is ready. You can also verify Python manually:
+
+```bash
+python3 --version
+```
 
 ## What's preinstalled in the container
 
 Pulled from the `features` block of [.devcontainer/devcontainer.json](../.devcontainer/devcontainer.json):
 
 - `git` and `gh` (GitHub CLI)
-- `docker` (Docker-in-Docker, so you can build images and run `docker compose` inside the dev container)
+- `python` 3.13 - used to run `app/build_and_push.py`
+- `docker` (Docker-in-Docker with **Buildx** enabled, so you can build images and run `docker compose` inside the dev container)
 - `terraform` 1.15.2
 - `aws-cli` (latest)
 - `kubectl` and `helm` (latest)
 - `php` 8.3 with Composer
 
 Plus a curated list of VS Code extensions (Terraform / HCL, YAML, Kubernetes, AWS Toolkit, Intelephense, PHP Debug, Prettier, EditorConfig).
+
+## Typical workflow
+
+A common session from zero to images in ECR:
+
+1. Start the host runtime (`colima start` or Docker Desktop) and confirm `~/Documents/.env` has valid AWS credentials.
+2. **Dev Containers: Reopen in Container**.
+3. Smoke-test the apps locally:
+
+   ```bash
+   cd app
+   docker compose up -d --build
+   # http://localhost:8081 and http://localhost:8082
+   ```
+
+4. After `terraform apply` in `terraform/ecr/` (see [docs/infra.md](infra.md)), push images:
+
+   ```bash
+   cd app
+   python3 build_and_push.py
+   ```
+
+See [docs/app.md](app.md) for versioning, compose details and the full `build_and_push.py` reference.
 
 ## Forwarded ports
 
