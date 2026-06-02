@@ -12,6 +12,22 @@ module "eks" {
   create_iam_role                          = true
   create_cloudwatch_log_group              = false
 
+  endpoint_public_access  = true
+  endpoint_private_access = true
+
+  dataplane_wait_duration = "60s"
+
+  timeouts = {
+    create = "45m"
+    delete = "45m"
+  }
+
+  addons_timeouts = {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+
   create_node_security_group = true
   node_security_group_additional_rules = {
     http = {
@@ -34,14 +50,21 @@ module "eks" {
 
   eks_managed_node_groups = {
     mvtthxw_group = {
-      create_iam_role = true
-      desired_size    = 1
-      max_size        = 1
-      min_size        = 1
-      disk_size       = 20
+      create_iam_role            = true
+      iam_role_attach_cni_policy = true
+      desired_size               = 1
+      max_size                   = 4
+      min_size                   = 1
+      disk_size                  = 20
 
       instance_types = ["t3.medium"]
       capacity_type  = "ON_DEMAND"
+
+      timeouts = {
+        create = "45m"
+        update = "45m"
+        delete = "45m"
+      }
     }
   }
 
@@ -57,22 +80,25 @@ module "eks" {
 
   addons = {
     vpc-cni = {
-      most_recent              = true
-      before_compute           = true
-      preserve                 = false
-      vpc_cni_enable_ipv4      = true
-      service_account_role_arn = module.vpc_cni_role.arn
-      resolve_conflicts        = "OVERWRITE"
-    },
-    coredns = {
-      most_recent       = true
-      preserve          = false
-      resolve_conflicts = "OVERWRITE"
+      most_recent                 = true
+      before_compute              = true
+      preserve                    = false
+      service_account_role_arn    = module.vpc_cni_role.arn
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     },
     kube-proxy = {
-      most_recent       = true
-      preserve          = false
-      resolve_conflicts = "OVERWRITE"
+      most_recent                 = true
+      before_compute              = true
+      preserve                    = false
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+    },
+    coredns = {
+      most_recent                 = true
+      preserve                    = false
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     }
   }
 
