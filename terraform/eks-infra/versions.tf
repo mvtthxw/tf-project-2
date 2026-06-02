@@ -23,12 +23,12 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region = var.general.region
   default_tags {
     tags = {
-      Owner       = var.username
-      Repo        = var.repo
-      Environment = var.environment
+      Owner       = var.general.username
+      Repo        = var.general.repo
+      Environment = var.general.environment
       ManagedBy   = "Terraform"
     }
   }

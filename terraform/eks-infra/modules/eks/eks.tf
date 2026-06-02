@@ -2,10 +2,10 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "21.20.0"
 
-  name               = "${var.username}-${var.repo}-${var.environment}-eks"
-  kubernetes_version = var.cluster_version
-  subnet_ids         = module.vpc.private_subnets
-  vpc_id             = module.vpc.vpc_id
+  name               = local.cluster_name
+  kubernetes_version = local.cluster_version
+  subnet_ids         = var.private_subnets
+  vpc_id             = var.vpc_id
 
   enable_irsa                              = true
   enable_cluster_creator_admin_permissions = true
@@ -49,16 +49,15 @@ module "eks" {
   }
 
   eks_managed_node_groups = {
-    mvtthxw_group = {
+    (local.eks_managed_node_group_name) = {
       create_iam_role            = true
       iam_role_attach_cni_policy = true
-      desired_size               = 1
-      max_size                   = 4
-      min_size                   = 1
-      disk_size                  = 20
-
-      instance_types = ["t3.medium"]
-      capacity_type  = "ON_DEMAND"
+      desired_size               = var.eks.node_group_desired_size
+      max_size                   = var.eks.node_group_max_size
+      min_size                   = var.eks.node_group_min_size
+      disk_size                  = var.eks.node_group_disk_size
+      instance_types             = var.eks.node_group_instance_types
+      capacity_type              = "ON_DEMAND"
 
       timeouts = {
         create = "45m"

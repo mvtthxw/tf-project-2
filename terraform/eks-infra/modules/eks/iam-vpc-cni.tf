@@ -3,7 +3,7 @@ module "vpc_cni_role" {
   version = "6.6.0"
 
   use_name_prefix = false
-  name            = "${var.username}-${var.repo}-${var.environment}-vpc-cni-role"
+  name            = local.vpc_cni_role_name
 
   attach_vpc_cni_policy = true
   vpc_cni_enable_ipv4   = true

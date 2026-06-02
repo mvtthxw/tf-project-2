@@ -1,26 +1,12 @@
-# General
 variable "general" {
-  description = "General variables"
   type = object({
     username    = string
     repo        = string
-    region      = string
     environment = string
   })
 }
 
-# VPC
-variable "vpc" {
-  description = "VPC variables"
-  type = object({
-    cidr     = string
-    az_count = number
-  })
-}
-
-# EKS Cluster
 variable "eks" {
-  description = "EKS cluster variables"
   type = object({
     cluster_version           = string
     node_group_disk_size      = number
@@ -29,4 +15,12 @@ variable "eks" {
     node_group_max_size       = number
     node_group_desired_size   = number
   })
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "private_subnets" {
+  type = list(string)
 }
