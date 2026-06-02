@@ -84,3 +84,49 @@ output "oidc_issuer_url" {
   description = "EKS OIDC Issuer URL"
   value       = module.eks.cluster_oidc_issuer_url
 }
+
+# Controllers
+output "aws_load_balancer_controller_role_arn" {
+  description = "IAM role ARN for the AWS Load Balancer Controller (IRSA)"
+  value       = module.controllers.aws_load_balancer_controller_role_arn
+}
+
+output "aws_load_balancer_controller_role_name" {
+  description = "IAM role name for the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_role_name
+}
+
+output "aws_load_balancer_controller_service_account_name" {
+  description = "Kubernetes service account name for the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_service_account_name
+}
+
+output "aws_load_balancer_controller_service_account_namespace" {
+  description = "Kubernetes namespace of the AWS Load Balancer Controller service account"
+  value       = module.controllers.aws_load_balancer_controller_service_account_namespace
+}
+
+output "aws_load_balancer_controller_helm_release_name" {
+  description = "Helm release name of the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_helm_release_name
+}
+
+output "aws_load_balancer_controller_helm_release_namespace" {
+  description = "Helm release namespace of the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_helm_release_namespace
+}
+
+output "aws_load_balancer_controller_helm_chart_version" {
+  description = "Helm chart version of the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_helm_chart_version
+}
+
+output "aws_load_balancer_controller_helm_chart" {
+  description = "Helm chart name of the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_helm_chart
+}
+
+output "aws_load_balancer_controller_helm_status" {
+  description = "Helm release status of the AWS Load Balancer Controller"
+  value       = module.controllers.aws_load_balancer_controller_helm_status
+}
