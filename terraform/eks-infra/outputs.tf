@@ -130,3 +130,130 @@ output "aws_load_balancer_controller_helm_status" {
   description = "Helm release status of the AWS Load Balancer Controller"
   value       = module.controllers.aws_load_balancer_controller_helm_status
 }
+
+# Cluster Autoscaler
+output "cluster_autoscaler_role_arn" {
+  description = "IAM role ARN for the Cluster Autoscaler (IRSA)"
+  value       = module.controllers.cluster_autoscaler_role_arn
+}
+
+output "cluster_autoscaler_role_name" {
+  description = "IAM role name for the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_role_name
+}
+
+output "cluster_autoscaler_service_account_name" {
+  description = "Kubernetes service account name for the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_service_account_name
+}
+
+output "cluster_autoscaler_service_account_namespace" {
+  description = "Kubernetes namespace of the Cluster Autoscaler service account"
+  value       = module.controllers.cluster_autoscaler_service_account_namespace
+}
+
+output "cluster_autoscaler_helm_release_name" {
+  description = "Helm release name of the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_helm_release_name
+}
+
+output "cluster_autoscaler_helm_release_namespace" {
+  description = "Helm release namespace of the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_helm_release_namespace
+}
+
+output "cluster_autoscaler_helm_chart_version" {
+  description = "Helm chart version of the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_helm_chart_version
+}
+
+output "cluster_autoscaler_helm_chart" {
+  description = "Helm chart name of the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_helm_chart
+}
+
+output "cluster_autoscaler_helm_status" {
+  description = "Helm release status of the Cluster Autoscaler"
+  value       = module.controllers.cluster_autoscaler_helm_status
+}
+
+# Secrets Store CSI
+output "secrets_store_csi_provider_role_arn" {
+  description = "IAM role ARN for the Secrets Store CSI AWS provider (IRSA)"
+  value       = module.controllers.secrets_store_csi_provider_role_arn
+}
+
+output "secrets_store_csi_provider_role_name" {
+  description = "IAM role name for the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_role_name
+}
+
+output "secrets_store_csi_provider_service_account_name" {
+  description = "Kubernetes service account name for the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_service_account_name
+}
+
+output "secrets_store_csi_provider_service_account_namespace" {
+  description = "Kubernetes namespace of the Secrets Store CSI AWS provider service account"
+  value       = module.controllers.secrets_store_csi_provider_service_account_namespace
+}
+
+output "secrets_store_csi_provider_cluster_role_name" {
+  description = "ClusterRole name for the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_cluster_role_name
+}
+
+output "secrets_store_csi_provider_cluster_role_binding_name" {
+  description = "ClusterRoleBinding name for the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_cluster_role_binding_name
+}
+
+output "secrets_store_csi_driver_helm_release_name" {
+  description = "Helm release name of the Secrets Store CSI driver"
+  value       = module.controllers.secrets_store_csi_driver_helm_release_name
+}
+
+output "secrets_store_csi_driver_helm_release_namespace" {
+  description = "Helm release namespace of the Secrets Store CSI driver"
+  value       = module.controllers.secrets_store_csi_driver_helm_release_namespace
+}
+
+output "secrets_store_csi_driver_helm_chart_version" {
+  description = "Helm chart version of the Secrets Store CSI driver"
+  value       = module.controllers.secrets_store_csi_driver_helm_chart_version
+}
+
+output "secrets_store_csi_driver_helm_chart" {
+  description = "Helm chart name of the Secrets Store CSI driver"
+  value       = module.controllers.secrets_store_csi_driver_helm_chart
+}
+
+output "secrets_store_csi_driver_helm_status" {
+  description = "Helm release status of the Secrets Store CSI driver"
+  value       = module.controllers.secrets_store_csi_driver_helm_status
+}
+
+output "secrets_store_csi_provider_aws_helm_release_name" {
+  description = "Helm release name of the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_aws_helm_release_name
+}
+
+output "secrets_store_csi_provider_aws_helm_release_namespace" {
+  description = "Helm release namespace of the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_aws_helm_release_namespace
+}
+
+output "secrets_store_csi_provider_aws_helm_chart_version" {
+  description = "Helm chart version of the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_aws_helm_chart_version
+}
+
+output "secrets_store_csi_provider_aws_helm_chart" {
+  description = "Helm chart name of the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_aws_helm_chart
+}
+
+output "secrets_store_csi_provider_aws_helm_status" {
+  description = "Helm release status of the Secrets Store CSI AWS provider"
+  value       = module.controllers.secrets_store_csi_provider_aws_helm_status
+}
