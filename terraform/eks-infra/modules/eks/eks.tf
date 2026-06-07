@@ -101,6 +101,11 @@ module "eks" {
     }
   }
 
+  tags = {
+    "k8s.io/cluster-autoscaler/enabled"               = "true"
+    "k8s.io/cluster-autoscaler/${local.cluster_name}" = "owned"
+  }
+
   # access_entries = {
   #   admin = {
   #     principal_arn = data.aws_caller_identity.current.arn
