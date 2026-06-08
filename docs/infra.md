@@ -1,26 +1,27 @@
 # Infrastructure
 
-All AWS infrastructure is defined as Terraform code under [terraform/](../terraform). It is intentionally split into **two independent stacks** so the expensive part (EKS + VPC) can be torn down between work sessions while the cheap part (ECR repositories and the images stored in them) survives.
+All AWS infrastructure is defined as Terraform code under [terraform/](../terraform). It is intentionally split into **two independent stacks** so the expensive part (EKS + VPC + controllers) can be torn down between work sessions while the cheap part (ECR repositories and the images stored in them) survives.
 
 ```
 terraform/
 ├── ecr/         # AWS ECR repositories for the two apps
-└── eks-infra/   # VPC + EKS cluster (managed nodes + Fargate)
+└── eks-infra/   # VPC + EKS cluster + Helm controllers
 ```
 
 ## Why two stacks?
 
 - **`terraform/ecr/`** - cheap to keep around. ECR storage costs are negligible and the images you've built and pushed are valuable; you don't want to lose them every time you tear down the cluster.
-- **`terraform/eks-infra/`** - the expensive part. An EKS control plane and a NAT gateway both bill by the hour, so this stack is designed to be applied at the start of a session and destroyed at the end.
+- **`terraform/eks-infra/`** - the expensive part. An EKS control plane, NAT gateway and running nodes all bill by the hour, so this stack is designed to be applied at the start of a session and destroyed at the end.
 
 Splitting them means a `terraform destroy` on `eks-infra` doesn't touch ECR. When you next come back, you `terraform apply` the EKS stack and the existing images are immediately available.
 
 ```mermaid
 flowchart LR
   Dev[Developer in Dev Container] -->|terraform apply| ECR[terraform/ecr -> AWS ECR repos]
-  Dev -->|terraform apply| EKS[terraform/eks-infra -> VPC + EKS + Fargate]
-  ECR -.images pulled by.-> EKS
-  Dev -->|terraform destroy| EKS
+  Dev -->|build_and_push.py| ECR
+  Dev -->|terraform apply| EKSInfra[terraform/eks-infra]
+  ECR -.images pulled by.-> EKSInfra
+  Dev -->|terraform destroy| EKSInfra
   ECR -.survives destroy.-> ECR
 ```
 
@@ -41,47 +42,86 @@ Outputs ([terraform/ecr/outputs.tf](../terraform/ecr/outputs.tf)) expose:
 - `repository_arns` - same map but ARNs.
 - `registry_id` - the AWS account ID hosting the registry.
 
-## `terraform/eks-infra/`
+## `terraform/eks-infra/` overview
 
-Three pieces:
+The EKS stack is organised as three Terraform modules orchestrated from [terraform/eks-infra/main.tf](../terraform/eks-infra/main.tf):
 
-### VPC ([terraform/eks-infra/vpc.tf](../terraform/eks-infra/vpc.tf))
+```
+terraform/eks-infra/
+├── main.tf              # orchestrates 3 modules
+├── variables.tf         # general / vpc / eks objects
+├── terraform.tfvars
+├── versions.tf          # aws + kubernetes + helm providers
+├── outputs.tf           # re-exports from all modules
+└── modules/
+    ├── network/         # VPC
+    ├── eks/             # EKS cluster + addons + VPC CNI IRSA
+    └── controllers/     # Helm: ALB, Cluster Autoscaler, Secrets Store CSI
+```
 
-Built with the upstream `terraform-aws-modules/vpc/aws` module (v6.6.1):
+### Module dependencies
 
-- `var.az_count` Availability Zones (default `2`).
-- One public + one private subnet per AZ, carved out of `var.cidr` (`10.100.0.0/20`).
-- A **single NAT gateway** (cost optimisation - one NAT instead of one per AZ).
-- Public IPs auto-assigned in public subnets.
+A single `terraform apply` creates resources in this order:
 
-### EKS cluster ([terraform/eks-infra/eks.tf](../terraform/eks-infra/eks.tf))
+```mermaid
+flowchart TB
+  root[eks-infra root] --> network[module network]
+  root --> eks[module eks]
+  root --> controllers[module controllers]
+  network -->|vpc_id private_subnets| eks
+  eks -->|cluster_name oidc_provider_arn| controllers
+  network -->|vpc_id| controllers
+```
 
-Built with `terraform-aws-modules/eks/aws` v21.20.0:
+1. **network** - VPC, subnets, NAT gateway (no cluster dependency).
+2. **eks** - EKS control plane, node group, Fargate profile, core addons (needs VPC outputs).
+3. **controllers** - Helm releases for cluster add-ons (needs EKS API endpoint and OIDC provider; `depends_on = [module.eks]`).
 
-- Cluster name: `<username>-<repo>-<environment>-eks`.
-- Kubernetes version from `var.cluster_version` (`1.35`).
-- Worker subnets: the private subnets created by the VPC module.
-- IRSA enabled (`enable_irsa = true`), so service accounts can assume IAM roles.
-- Cluster creator gets admin access (`enable_cluster_creator_admin_permissions = true`).
-- One **managed node group** `mvtthxw_group`: 1 x `t3.medium`, 20 GB disk, on-demand.
-- One **Fargate profile** `default` selecting the `fargate-apps` namespace.
-- Addons installed and pinned to "most recent": `vpc-cni` (with the dedicated IRSA role from `iam-role-vpc-cni.tf`), `coredns`, `kube-proxy`.
-- Node security group has additional ingress rules for ports `80` and `443` from anywhere.
+The root stack configures **kubernetes** and **helm** providers ([versions.tf](../terraform/eks-infra/versions.tf)) using the EKS cluster endpoint and auth token, which is what allows the controllers module to install Helm charts during apply.
 
-### IAM role for the VPC CNI ([terraform/eks-infra/iam-role-vpc-cni.tf](../terraform/eks-infra/iam-role-vpc-cni.tf))
+### Configuration format
 
-Built with `terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts` v6.6.0. Trusts the EKS OIDC provider for the `kube-system:aws-node` service account, attaches the AWS-managed VPC CNI policy. This role is wired into the `vpc-cni` addon via `service_account_role_arn`.
+Variables are grouped into objects in [terraform/eks-infra/terraform.tfvars](../terraform/eks-infra/terraform.tfvars):
+
+```hcl
+general = {
+  username    = "mvtthxw"
+  repo        = "k8s-php-infra"
+  region      = "us-east-1"
+  environment = "dev"
+}
+
+vpc = {
+  cidr     = "10.100.0.0/20"
+  az_count = 2
+}
+
+eks = {
+  cluster_version           = "1.35"
+  node_group_disk_size      = 20
+  node_group_min_size       = 1
+  node_group_max_size       = 2
+  node_group_desired_size   = 1
+  node_group_instance_types = ["t3.medium"]
+}
+```
+
+Default tags (`Owner`, `Repo`, `Environment`, `ManagedBy = Terraform`) are applied to every AWS resource via the `aws` provider's `default_tags` block.
+
+### Detailed module documentation
+
+- [docs/infra-vpc.md](infra-vpc.md) - VPC / network module (`modules/network/`)
+- [docs/infra-eks.md](infra-eks.md) - EKS cluster module (`modules/eks/`)
+- [docs/infra-controllers.md](infra-controllers.md) - Helm controllers (`modules/controllers/`)
 
 ## Remote state
 
 Both stacks use the same S3 backend bucket `mvtthxw-tf-state` in `us-east-1`, with separate state keys so they don't collide:
 
-| Stack                  | State key                              | File                                                        |
-| ---------------------- | -------------------------------------- | ----------------------------------------------------------- |
-| `terraform/ecr`        | `state/k8s-php-ecr.tfstate`            | [versions.tf](../terraform/ecr/versions.tf)                 |
-| `terraform/eks-infra`  | `state/k8s-php-eks-infra.tfstate`      | [versions.tf](../terraform/eks-infra/versions.tf)           |
-
-Default tags (`Owner`, `Repo`, `Environment`, `ManagedBy = Terraform`) are applied to every resource via the `aws` provider's `default_tags` block in each stack.
+| Stack                 | State key                         | File                                              |
+| --------------------- | --------------------------------- | ------------------------------------------------- |
+| `terraform/ecr`       | `state/k8s-php-ecr.tfstate`       | [versions.tf](../terraform/ecr/versions.tf)       |
+| `terraform/eks-infra` | `state/k8s-php-eks-infra.tfstate` | [versions.tf](../terraform/eks-infra/versions.tf) |
 
 ## Standard workflow
 
@@ -96,17 +136,39 @@ terraform apply
 
 ### Recommended order
 
-1. **Apply `ecr` first** so the repositories exist and you can push images to them.
-2. **Apply `eks-infra` second** to bring up the cluster.
-3. Build and push images, deploy workloads, do your work.
-4. **Destroy `eks-infra` when done** to stop the EKS / NAT bill:
+1. **Apply `ecr`** so the repositories exist:
 
-```bash
-cd terraform/eks-infra
-terraform destroy
-```
+   ```bash
+   cd terraform/ecr
+   terraform apply
+   ```
 
-ECR is untouched by step 4, so the images stay available for the next session.
+2. **Build and push images** to ECR (see [docs/app.md](app.md)):
+
+   ```bash
+   cd app
+   python3 build_and_push.py
+   ```
+
+3. **Apply `eks-infra`** to bring up VPC, EKS and controllers in one run:
+
+   ```bash
+   cd terraform/eks-infra
+   terraform apply
+   ```
+
+   This step can take a while (cluster creation, node group, Helm releases). Timeouts are set to up to 45 minutes for the cluster and node group - do not interrupt the apply.
+
+4. Deploy application workloads (Helm charts for the PHP apps, when available).
+
+5. **Destroy `eks-infra` when done** to stop the EKS / NAT / node bill:
+
+   ```bash
+   cd terraform/eks-infra
+   terraform destroy
+   ```
+
+   ECR is untouched, so the images stay available for the next session.
 
 ## Connecting `kubectl` after apply
 
@@ -118,6 +180,20 @@ aws eks update-kubeconfig \
   --region us-east-1
 ```
 
-The exact `<cluster_name>` is `<username>-<repo>-<environment>-eks` based on the values in [terraform/eks-infra/terraform.tfvars](../terraform/eks-infra/terraform.tfvars), and is also surfaced in the stack outputs (`cluster_id`, `cluster_endpoint`, `oidc_issuer_url`, ...) - see [terraform/eks-infra/outputs.tf](../terraform/eks-infra/outputs.tf).
+The cluster name is `<username>-<repo>-<environment>-eks` based on the `general` block in [terraform/eks-infra/terraform.tfvars](../terraform/eks-infra/terraform.tfvars) (e.g. `mvtthxw-k8s-php-infra-dev-eks`). It is also surfaced in stack outputs - see [terraform/eks-infra/outputs.tf](../terraform/eks-infra/outputs.tf).
 
-After that, `kubectl get nodes` should list the managed node group node, and `kubectl get pods -A` should show the addons running.
+### Verification checklist
+
+```bash
+kubectl get nodes
+kubectl get pods -n kube-system
+helm list -n kube-system
+```
+
+After that:
+
+- `kubectl get nodes` should list the managed node group node.
+- `kubectl get pods -n kube-system` should show core addons and controller pods running.
+- `helm list -n kube-system` should list the AWS Load Balancer Controller, Cluster Autoscaler, and Secrets Store CSI releases.
+
+See [docs/infra-controllers.md](infra-controllers.md) for controller-specific verification commands.

@@ -17,14 +17,10 @@ module "eks" {
 module "controllers" {
   source = "./modules/controllers"
 
-  general = var.general
-  vpc = {
-    vpc_id = module.network.vpc_id
-  }
-  eks = {
-    cluster_name      = module.eks.cluster_name
-    oidc_provider_arn = module.eks.oidc_provider_arn
-  }
+  general               = var.general
+  vpc_id                = module.network.vpc_id
+  eks_cluster_name      = module.eks.cluster_name
+  eks_oidc_provider_arn = module.eks.oidc_provider_arn
 
   depends_on = [module.eks]
 }

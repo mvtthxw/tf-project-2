@@ -18,7 +18,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   set = [
     {
       name  = "clusterName"
-      value = var.eks.cluster_name
+      value = var.eks_cluster_name
     },
     {
       name  = "serviceAccount.create"
@@ -34,7 +34,7 @@ resource "helm_release" "aws_load_balancer_controller" {
     },
     {
       name  = "vpcId"
-      value = var.vpc.vpc_id
+      value = var.vpc_id
     },
   ]
 

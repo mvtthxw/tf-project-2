@@ -7,17 +7,14 @@ variable "general" {
   })
 }
 
-variable "vpc" {
-  type = object({
-    vpc_id = string
-  })
+variable "vpc_id" {
+  type = string
 }
 
+variable "eks_cluster_name" {
+  type = string
+}
 
-
-variable "eks" {
-  type = object({
-    cluster_name      = string
-    oidc_provider_arn = string
-  })
+variable "eks_oidc_provider_arn" {
+  type = string
 }

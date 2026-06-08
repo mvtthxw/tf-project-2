@@ -6,11 +6,11 @@ module "cluster_autoscaler_role" {
   name            = local.cluster_autoscaler_role_name
 
   attach_cluster_autoscaler_policy = true
-  cluster_autoscaler_cluster_names = [var.eks.cluster_name]
+  cluster_autoscaler_cluster_names = [var.eks_cluster_name]
 
   oidc_providers = {
     main = {
-      provider_arn               = var.eks.oidc_provider_arn
+      provider_arn               = var.eks_oidc_provider_arn
       namespace_service_accounts = ["kube-system:cluster-autoscaler"]
     }
   }

@@ -100,7 +100,7 @@ Plus a curated list of VS Code extensions (Terraform / HCL, YAML, Kubernetes, AW
 
 ## Typical workflow
 
-A common session from zero to images in ECR:
+A common session from zero to a running cluster:
 
 1. Start the host runtime (`colima start` or Docker Desktop) and confirm `~/Documents/.env` has valid AWS credentials.
 2. **Dev Containers: Reopen in Container**.
@@ -112,12 +112,24 @@ A common session from zero to images in ECR:
    # http://localhost:8081 and http://localhost:8082
    ```
 
-4. After `terraform apply` in `terraform/ecr/` (see [docs/infra.md](infra.md)), push images:
+4. Apply the ECR stack and push images (see [docs/infra.md](infra.md)):
 
    ```bash
-   cd app
+   cd terraform/ecr
+   terraform apply
+
+   cd ../../app
    python3 build_and_push.py
    ```
+
+5. Apply the EKS infrastructure stack (VPC, cluster, Helm controllers):
+
+   ```bash
+   cd terraform/eks-infra
+   terraform apply
+   ```
+
+   This step can take a while (cluster creation, node group, Helm releases). Timeouts are set to up to 45 minutes - do not interrupt the apply. See [docs/infra.md](infra.md) for the full recommended order and verification checklist.
 
 See [docs/app.md](app.md) for versioning, compose details and the full `build_and_push.py` reference.
 
