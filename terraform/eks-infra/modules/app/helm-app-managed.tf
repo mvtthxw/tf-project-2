@@ -26,7 +26,7 @@ resource "helm_release" "app_managed" {
       value = local.managed_app_namespace
     },
     {
-      name  = "nodeSelector.eks\\.amazonaws\\.com/nodegroup"
+      name  = "nodeSelector.node-group-label"
       value = local.managed_app_node_group
     }
   ]

@@ -38,6 +38,5 @@ variable "app" {
     managed_app_ecr_repo_name = string
     managed_app_image_tag     = string
     managed_app_replica_count = number
-    managed_app_node_group    = string
   })
 }

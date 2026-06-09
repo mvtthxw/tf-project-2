@@ -28,5 +28,4 @@ app = {
   managed_app_image_tag     = "v1.0.0"
   managed_app_namespace     = "managed-apps"
   managed_app_replica_count = 2
-  managed_app_node_group    = "mvtthxw-node-group"
 }

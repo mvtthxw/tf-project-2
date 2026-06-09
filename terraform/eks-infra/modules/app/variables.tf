@@ -14,6 +14,5 @@ variable "app" {
     managed_app_image_tag     = string
     managed_app_replica_count = optional(number)
     managed_app_namespace     = optional(string)
-    managed_app_node_group    = optional(string)
   })
 }

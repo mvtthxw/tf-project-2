@@ -60,6 +60,10 @@ module "eks" {
       capacity_type              = "ON_DEMAND"
       ami_type                   = "AL2023_ARM_64_STANDARD"
 
+      labels = {
+        node-group-label = local.eks_managed_node_group_name
+      }
+
       timeouts = {
         create = "45m"
         update = "45m"
