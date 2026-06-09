@@ -257,3 +257,24 @@ output "secrets_store_csi_provider_aws_helm_status" {
   description = "Helm release status of the Secrets Store CSI AWS provider"
   value       = module.controllers.secrets_store_csi_provider_aws_helm_status
 }
+
+# Application workloads
+output "app_managed_helm_release_name" {
+  description = "Helm release name of app-managed"
+  value       = module.app.app_managed_helm_release_name
+}
+
+output "app_managed_helm_release_namespace" {
+  description = "Helm release namespace of app-managed"
+  value       = module.app.app_managed_helm_release_namespace
+}
+
+output "app_managed_helm_status" {
+  description = "Helm release status of app-managed"
+  value       = module.app.app_managed_helm_status
+}
+
+output "app_managed_image" {
+  description = "Deployed container image (repository:tag)"
+  value       = module.app.app_managed_image
+}

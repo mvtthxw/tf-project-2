@@ -24,3 +24,12 @@ module "controllers" {
 
   depends_on = [module.eks]
 }
+
+module "app" {
+  source = "./modules/app"
+
+  general = var.general
+  app     = var.app
+
+  depends_on = [module.controllers]
+}

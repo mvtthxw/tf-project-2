@@ -58,6 +58,7 @@ module "eks" {
       disk_size                  = var.eks.node_group_disk_size
       instance_types             = var.eks.node_group_instance_types
       capacity_type              = "ON_DEMAND"
+      ami_type                   = "AL2023_ARM_64_STANDARD"
 
       timeouts = {
         create = "45m"
