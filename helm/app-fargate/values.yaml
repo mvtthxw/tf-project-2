@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  # Full ECR URL, e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/mvtthxw-k8s-php-dev-app-fargate
+  repository: ""
+  tag: v1.0.0
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace:
+  create: true
+  name: fargate-apps
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: shared-apps
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 8081}]'
+  path: /
+  pathType: Prefix
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
