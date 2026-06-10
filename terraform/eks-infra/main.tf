@@ -12,6 +12,8 @@ module "eks" {
   eks             = var.eks
   vpc_id          = module.network.vpc_id
   private_subnets = module.network.private_subnets
+
+  depends_on = [module.network]
 }
 
 module "controllers" {

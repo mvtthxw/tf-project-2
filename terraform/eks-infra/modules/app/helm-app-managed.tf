@@ -28,6 +28,12 @@ resource "helm_release" "app_managed" {
     {
       name  = "nodeSelector.node-group-label"
       value = local.managed_app_node_group
-    }
+    },
+    {
+      name  = "ssm.parameterValue"
+      value = aws_ssm_parameter.app_managed_params_store.value
+    },
   ]
+
+  depends_on = [aws_ssm_parameter.app_managed_params_store]
 }

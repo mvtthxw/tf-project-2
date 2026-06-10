@@ -5,8 +5,11 @@ Version is read from each app's .version file. The same value is:
   - copied into the image at /etc/app/version (read by the PHP app)
   - used as the image tag in ECR (only the ":<version>" tag is pushed)
 
+Images are built for linux/amd64 and linux/arm64 by default so the same tag
+works on EKS Fargate (x86) and Graviton managed node groups (ARM).
+
 BuildKit provenance/SBOM attestations are disabled so each push results in
-exactly one ECR image entry per version (no extra attestation manifests).
+a single multi-arch manifest per version (no extra attestation manifests).
 
 Configuration defaults must stay in sync with terraform/ecr/terraform.tfvars
 (the ECR repo names are derived as: <username>-<repo>-<environment>-<short>).
@@ -23,6 +26,8 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ALL_APPS = ("app-managed", "app-fargate")
+DEFAULT_PLATFORMS = ("linux/amd64", "linux/arm64")
+BUILDX_BUILDER = "app-multiarch"
 
 DEFAULTS = {
     "username": os.environ.get("USERNAME", "mvtthxw"),
@@ -42,7 +47,7 @@ def parse_args() -> argparse.Namespace:
 
     Returns:
         Parsed `argparse.Namespace` with attributes:
-        `apps` (list[str]), `username`, `repo`, `environment`, `region`.
+        `apps` (list[str]), `username`, `repo`, `environment`, `region`, `platform`.
     """
     parser = argparse.ArgumentParser(
         description=(
@@ -67,6 +72,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo", default=DEFAULTS["repo"])
     parser.add_argument("--environment", default=DEFAULTS["environment"])
     parser.add_argument("--region", default=DEFAULTS["region"])
+    parser.add_argument(
+        "--platform",
+        default=",".join(DEFAULT_PLATFORMS),
+        help=(
+            "comma-separated target platforms "
+            f"(default: {','.join(DEFAULT_PLATFORMS)})"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -149,6 +162,27 @@ def read_version(app_dir: Path) -> str:
     return version
 
 
+def ensure_buildx_builder() -> None:
+    """Ensure a buildx builder capable of multi-platform builds exists.
+
+    Creates a docker-container driver builder on first use and selects it
+    for subsequent `docker buildx build` invocations.
+    """
+    inspect = subprocess.run(
+        ["docker", "buildx", "inspect", BUILDX_BUILDER],
+        capture_output=True,
+    )
+    if inspect.returncode != 0:
+        print(f"==> Creating buildx builder '{BUILDX_BUILDER}'")
+        run([
+            "docker", "buildx", "create",
+            "--name", BUILDX_BUILDER,
+            "--driver", "docker-container",
+            "--bootstrap",
+        ])
+    run(["docker", "buildx", "use", BUILDX_BUILDER])
+
+
 def docker_login(registry: str, region: str) -> None:
     """Authenticate the local Docker client against an ECR registry.
 
@@ -178,6 +212,7 @@ def build_and_push(app: str, version: str, registry: str, args: argparse.Namespa
 
     The ECR repository name is composed as
     `<username>-<repo>-<environment>-<app>` (matching `terraform/ecr/ecr.tf`).
+    Uses `docker buildx build --push` to publish a multi-arch manifest.
     BuildKit provenance/SBOM attestations are disabled (`--provenance=false`,
     `--sbom=false`) to avoid extra `<untagged>` manifests in ECR.
 
@@ -185,10 +220,10 @@ def build_and_push(app: str, version: str, registry: str, args: argparse.Namespa
         app: Short app name matching the directory under `app/` (e.g. `"app-managed"`).
         version: Version string to bake into the image and use as the tag.
         registry: Full ECR registry hostname.
-        args: Parsed CLI namespace (uses `username`, `repo`, `environment`).
+        args: Parsed CLI namespace (uses `username`, `repo`, `environment`, `platform`).
 
     Raises:
-        subprocess.CalledProcessError: If `docker build` or `docker push` fails.
+        subprocess.CalledProcessError: If `docker buildx build` fails.
     """
     app_dir = SCRIPT_DIR / app
     ecr_name = f"{args.username}-{args.repo}-{args.environment}-{app}"
@@ -197,19 +232,19 @@ def build_and_push(app: str, version: str, registry: str, args: argparse.Namespa
     print()
     print("=" * 60)
     print(f" {app} -> {ecr_uri}:{version}")
+    print(f" platforms: {args.platform}")
     print("=" * 60)
 
-    print("==> Building")
+    print("==> Building and pushing")
     run([
-        "docker", "build",
+        "docker", "buildx", "build",
+        "--platform", args.platform,
         "--provenance=false",
         "--sbom=false",
         "--tag", f"{ecr_uri}:{version}",
+        "--push",
         str(app_dir),
     ])
-
-    print(f"==> Pushing :{version}")
-    run(["docker", "push", f"{ecr_uri}:{version}"])
 
     print(f"==> Done: {ecr_uri}:{version}")
 
@@ -222,7 +257,8 @@ def main() -> int:
         2. Validate app names and required commands (`aws`, `docker`).
         3. Resolve the AWS account ID and ECR registry hostname.
         4. Authenticate Docker against ECR.
-        5. For each app: read its `.version`, build the image, push both tags.
+        5. Ensure a multi-platform buildx builder is available.
+        6. For each app: read its `.version`, build and push a multi-arch image.
 
     Returns:
         Process exit code (0 on success).
@@ -256,6 +292,9 @@ def main() -> int:
 
     print("==> Logging in to ECR")
     docker_login(registry, args.region)
+
+    print("==> Preparing buildx")
+    ensure_buildx_builder()
 
     for app in apps:
         version = read_version(SCRIPT_DIR / app)

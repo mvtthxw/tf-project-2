@@ -31,3 +31,6 @@ terraform.rc
 
 # Cursor
 .cursor/
+
+#Python 
+__pycache__/

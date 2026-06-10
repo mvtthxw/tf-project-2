@@ -17,3 +17,28 @@ output "app_managed_image" {
   description = "Deployed container image (repository:tag)"
   value       = "${data.aws_ecr_repository.app_managed.repository_url}:${var.app.managed_app_image_tag}"
 }
+
+output "app_managed_ssm_parameter_name" {
+  description = "SSM parameter path for app-managed PARAMS_STORE"
+  value       = aws_ssm_parameter.app_managed_params_store.name
+}
+
+output "app_fargate_helm_release_name" {
+  description = "Helm release name of app-fargate"
+  value       = helm_release.app_fargate.name
+}
+
+output "app_fargate_helm_release_namespace" {
+  description = "Helm release namespace of app-fargate"
+  value       = helm_release.app_fargate.namespace
+}
+
+output "app_fargate_helm_status" {
+  description = "Helm release status of app-fargate"
+  value       = helm_release.app_fargate.status
+}
+
+output "app_fargate_image" {
+  description = "Deployed container image (repository:tag)"
+  value       = "${data.aws_ecr_repository.app_fargate.repository_url}:${var.app.fargate_app_image_tag}"
+}
