@@ -15,14 +15,16 @@ spec:
       labels:
         {{- include "app-managed.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       containers:
         - name: app
           image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PARAMS_STORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "app-managed.fullname" . }}-env
+                  key: PARAMS_STORE
           ports:
             - name: http
               containerPort: 80

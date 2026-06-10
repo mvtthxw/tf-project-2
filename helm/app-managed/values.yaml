@@ -1,7 +1,6 @@
 replicaCount: 1
 
 image:
-  # Full ECR URL, e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/mvtthxw-k8s-php-dev-app-managed
   repository: ""
   tag: v1.0.0
   pullPolicy: IfNotPresent
@@ -13,6 +12,9 @@ namespace:
   create: true
   name: managed-apps
 
+ssm:
+  parameterValue: ""
+
 service:
   type: ClusterIP
   port: 80
@@ -23,9 +25,10 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: shared-apps
     alb.ingress.kubernetes.io/healthcheck-path: /
     alb.ingress.kubernetes.io/success-codes: "200"
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 8080}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 8082}]'
   path: /
   pathType: Prefix
 

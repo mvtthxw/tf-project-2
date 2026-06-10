@@ -2,10 +2,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "app-managed.fullname" . }}
+  name: {{ include "app-fargate.fullname" . }}
   namespace: {{ .Values.namespace.name }}
   labels:
-    {{- include "app-managed.labels" . | nindent 4 }}
+    {{- include "app-fargate.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -19,7 +19,7 @@ spec:
             pathType: {{ .Values.ingress.pathType }}
             backend:
               service:
-                name: {{ include "app-managed.fullname" . }}
+                name: {{ include "app-fargate.fullname" . }}
                 port:
                   number: {{ .Values.service.port }}
 {{- end }}

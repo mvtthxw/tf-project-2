@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "app-managed.name" -}}
+{{- define "app-fargate.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "app-managed.fullname" -}}
+{{- define "app-fargate.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,9 +24,9 @@ Create a default fully qualified app name.
 {{/*
 Common labels
 */}}
-{{- define "app-managed.labels" -}}
-helm.sh/chart: {{ include "app-managed.chart" . }}
-{{ include "app-managed.selectorLabels" . }}
+{{- define "app-fargate.labels" -}}
+helm.sh/chart: {{ include "app-fargate.chart" . }}
+{{ include "app-fargate.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -36,14 +36,14 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "app-managed.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "app-managed.name" . }}
+{{- define "app-fargate.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "app-fargate.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Chart label
 */}}
-{{- define "app-managed.chart" -}}
+{{- define "app-fargate.chart" -}}
 {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end }}

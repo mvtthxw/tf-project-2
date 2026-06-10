@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "app-managed.fullname" . }}
+  name: {{ include "app-fargate.fullname" . }}
   namespace: {{ .Values.namespace.name }}
   labels:
-    {{- include "app-managed.labels" . | nindent 4 }}
+    {{- include "app-fargate.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "app-managed.selectorLabels" . | nindent 6 }}
+      {{- include "app-fargate.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "app-managed.selectorLabels" . | nindent 8 }}
+        {{- include "app-fargate.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.nodeSelector }}
       nodeSelector:
