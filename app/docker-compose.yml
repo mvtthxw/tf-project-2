@@ -1,13 +1,13 @@
 services:
-  app-managed:
-    build:
-      context: ./app-managed
-    ports:
-      - "8081:80"
-
   app-fargate:
     build:
       context: ./app-fargate
+    ports:
+      - "8081:80"
+
+  app-managed:
+    build:
+      context: ./app-managed
     environment:
       PARAMS_STORE: "LOCAL VALUE"
     ports:

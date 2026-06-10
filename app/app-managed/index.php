@@ -5,9 +5,18 @@
     <title>App Managed</title>
 </head>
 <body>
-    <h1>Time App</h1>
+    <h1>Param Store</h1>
     <h1>Hello from App Managed <?= htmlspecialchars(is_readable('/etc/app/version') ? trim(file_get_contents('/etc/app/version')) : 'dev') ?></h1>
     <p>Container: <?= htmlspecialchars(gethostname()) ?></p>
-    <p>Time: <?= date('H:i:s') ?></p>
+    <p>Param Store:
+        <?php
+        $paramStore = getenv('PARAMS_STORE');
+        if ($paramStore) {
+            echo htmlspecialchars($paramStore);
+        } else {
+            echo '<i>not set</i>';
+        }
+        ?>
+    </p>
 </body>
 </html>
