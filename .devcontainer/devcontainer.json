@@ -96,6 +96,6 @@
     "source=cursor-state-tf-project-2,target=/home/vscode/.cursor,type=volume"
   ],
 
-  "postCreateCommand": "terraform -version && kubectl version --client=true --output=yaml | head -n 5 && helm version && php -v && docker --version",
+  "postCreateCommand": "bash .devcontainer/install-k9s.sh; grep -q 'kubectl-aliases.sh' ~/.bashrc || echo 'source \"/workspaces/tf-project-2/.devcontainer/kubectl-aliases.sh\"' >> ~/.bashrc; terraform -version; kubectl version --client=true --output=yaml | head -n 5; helm version; k9s version | head -n 1; php -v; docker --version",
   "remoteUser": "vscode"
 }
