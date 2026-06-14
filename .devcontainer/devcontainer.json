@@ -96,6 +96,7 @@
     "source=cursor-state-tf-project-2,target=/home/vscode/.cursor,type=volume"
   ],
 
-  "postCreateCommand": "bash .devcontainer/install-k9s.sh; grep -q 'kubectl-aliases.sh' ~/.bashrc || echo 'source \"/workspaces/tf-project-2/.devcontainer/kubectl-aliases.sh\"' >> ~/.bashrc; terraform -version; kubectl version --client=true --output=yaml | head -n 5; helm version; k9s version | head -n 1; php -v; docker --version",
+  "postCreateCommand": "bash ${containerWorkspaceFolder}/.devcontainer/install-k8s-tools.sh && bash ${containerWorkspaceFolder}/.devcontainer/setup-shell.sh",
+  "postStartCommand": "bash ${containerWorkspaceFolder}/.devcontainer/print-tool-versions.sh",
   "remoteUser": "vscode"
 }

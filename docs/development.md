@@ -1,6 +1,6 @@
 # Development
 
-This repository is set up to be opened inside a **Dev Container**. All required tooling (Terraform, AWS CLI, kubectl, Helm, PHP, Python, Docker-in-Docker, GitHub CLI) is installed automatically by the container image, so you don't need to install anything locally except a code editor and a container runtime.
+This repository is set up to be opened inside a **Dev Container**. Core tooling (Terraform, AWS CLI, kubectl, Helm, PHP, Python, Docker-in-Docker, GitHub CLI) is installed by Dev Container features; extra Kubernetes tools (`k9s`, `kubectx`, `kubens`) and shell aliases are set up automatically by post-create scripts. You don't need to install anything locally except a code editor and a container runtime.
 
 ## Prerequisites
 
@@ -78,13 +78,32 @@ If you need to change credentials, edit `~/Documents/.env` and rebuild the conta
 3. Open the repo folder in VS Code or Cursor.
 4. Run the command **Dev Containers: Reopen in Container** (or **Rebuild and Reopen in Container** if it's the first time / after changing `devcontainer.json`).
 
-After the container builds, a `postCreateCommand` runs and prints the versions of `terraform`, `kubectl`, `helm`, `php` and `docker` as a sanity check. If you see all five, the environment is ready. You can also verify Python manually:
+After the container builds, two lifecycle hooks run scripts from [.devcontainer/](../.devcontainer/):
+
+| Hook | When | What it does |
+|------|------|--------------|
+| `postCreateCommand` | once, on first container create / rebuild | installs extra Kubernetes CLI tools, configures shell aliases |
+| `postStartCommand` | on every container start | prints installed tool versions (health check) |
+
+On rebuild, wait a few seconds after Cursor reconnects before using `kubens`, `kubectx` or `k9s` — `postCreateCommand` may still be downloading k9s (~120 MB). Faster tools (`kubectx`, `kubens`) are installed first; k9s comes last.
+
+To check versions manually at any time:
 
 ```bash
-python3 --version
+bash .devcontainer/print-tool-versions.sh
+```
+
+If a tool is missing after rebuild, re-run the installer (idempotent — skips already installed binaries):
+
+```bash
+bash .devcontainer/install-k8s-tools.sh
+bash .devcontainer/setup-shell.sh
+source ~/.bashrc
 ```
 
 ## What's preinstalled in the container
+
+### Core tooling (Dev Container features)
 
 Pulled from the `features` block of [.devcontainer/devcontainer.json](../.devcontainer/devcontainer.json):
 
@@ -97,6 +116,34 @@ Pulled from the `features` block of [.devcontainer/devcontainer.json](../.devcon
 - `php` 8.3 with Composer
 
 Plus a curated list of VS Code extensions (Terraform / HCL, YAML, Kubernetes, AWS Toolkit, Intelephense, PHP Debug, Prettier, EditorConfig).
+
+### Extra Kubernetes CLI tools (post-create scripts)
+
+`k9s`, `kubectx` and `kubens` are **not** installed via community Dev Container features (they proved unreliable). Instead, [.devcontainer/install-k8s-tools.sh](../.devcontainer/install-k8s-tools.sh) downloads and installs them on container create:
+
+| Tool | Source | Notes |
+|------|--------|-------|
+| `kubectx` / `kubens` | [ahmetb/kubectx](https://github.com/ahmetb/kubectx) v0.9.5 (bash scripts) | installed first — ready within ~1 s |
+| `k9s` | [derailed/k9s](https://github.com/derailed/k9s) GitHub release (binary) | installed last — large download, architecture-aware (amd64 / arm64) |
+
+Binaries land in `/usr/local/bin` (or `~/.local/bin` as fallback if `sudo` is unavailable).
+
+### Shell setup
+
+[.devcontainer/setup-shell.sh](../.devcontainer/setup-shell.sh) adds a `source` line to `~/.bashrc` pointing at [.devcontainer/kubectl-aliases.sh](../.devcontainer/kubectl-aliases.sh). That file defines kubectl shortcuts (`k`, `kgp`, `kaf`, …) and aliases for the extra tools (`kctx` → `kubectx`, `kns` → `kubens`).
+
+Open a **new terminal** (or run `source ~/.bashrc`) after the first container create to load the aliases.
+
+### Dev container scripts
+
+All scripts live in [.devcontainer/](../.devcontainer/):
+
+| Script | Purpose |
+|--------|---------|
+| `install-k8s-tools.sh` | installs k9s, kubectx, kubens (idempotent) |
+| `setup-shell.sh` | wires kubectl aliases into `~/.bashrc` (idempotent) |
+| `print-tool-versions.sh` | prints versions of all key tools |
+| `kubectl-aliases.sh` | kubectl / kubectx / kubens alias definitions (sourced by bashrc) |
 
 ## Typical workflow
 
