@@ -1,6 +1,8 @@
 # Applications
 
-The [app/](../app) folder contains two small PHP demo applications. Both serve a single page over Apache and are intentionally tiny - they exist to prove that the EKS cluster, ECR repos and (eventually) Helm charts work end to end.
+The [app/](../app) folder contains two small PHP demo applications. Both serve a single page over Apache and are intentionally tiny - they exist to prove that the EKS cluster, ECR repos, and Helm deployment pipeline work end to end.
+
+Helm charts live in [helm/](../helm/) and are deployed by Terraform — see [docs/helm.md](helm.md) and [docs/infra-app.md](infra-app.md).
 
 ## Layout
 
@@ -22,27 +24,27 @@ Each app is a self-contained directory with its own `.version` file, `Dockerfile
 
 ## `app-managed`
 
-A minimal "time" page. It prints:
+A minimal **param store** page. It prints:
 
 - the app version (read from `/etc/app/version` inside the container),
 - the container's hostname (so you can see which pod served the request when running on EKS),
-- the current server time.
+- the value of the `PARAMS_STORE` environment variable, or `<i>not set</i>` if it isn't defined.
 
 Source: [app/app-managed/index.php](../app/app-managed/index.php).
 
-This app is intended to run on the **managed node group** side of the EKS cluster (hence the name).
+On EKS this app runs on the **managed node group** in the `managed-apps` namespace. `PARAMS_STORE` comes from a Kubernetes Secret populated by Terraform (SSM parameter value) — see [docs/infra-app.md](infra-app.md).
 
 ## `app-fargate`
 
-A minimal "param store" page. It prints:
+A minimal **time** page. It prints:
 
 - the app version (read from `/etc/app/version`),
 - the container's hostname,
-- the value of the `PARAMS_STORE` environment variable, or `<i>not set</i>` if it isn't defined.
+- the current server time.
 
 Source: [app/app-fargate/index.php](../app/app-fargate/index.php).
 
-This app is intended to run on the **Fargate** side of the EKS cluster, and the `PARAMS_STORE` value is a placeholder for a future SSM Parameter Store integration.
+On EKS this app runs on **Fargate** in the `fargate-apps` namespace (matched by the EKS Fargate profile).
 
 ## Versioning
 
@@ -51,8 +53,9 @@ Each app has a `.version` file (e.g. `v1.0.0`) that is the **single source of tr
 - **In the image** - the Dockerfile copies `.version` to `/etc/app/version` at build time.
 - **In the UI** - both `index.php` files read `/etc/app/version` and display it in the page heading. If the file is missing (e.g. running PHP outside Docker), the fallback is `dev`.
 - **In ECR** - [build_and_push.py](#build-and-push-to-ecr) reads the same `.version` file and uses it as the image tag.
+- **On EKS** - `app.*_app_image_tag` in [terraform/eks-infra/terraform.tfvars](../terraform/eks-infra/terraform.tfvars) must match the tag pushed to ECR.
 
-To bump a version, edit `app/<app>/.version`, then rebuild locally (`docker compose up -d --build`) or push to ECR (`python3 build_and_push.py <app>`).
+To bump a version, edit `app/<app>/.version`, push to ECR, update `terraform.tfvars`, then `terraform apply` in `eks-infra`.
 
 ## Dockerfiles
 
@@ -109,18 +112,19 @@ The version baked into `/etc/app/version` always matches the ECR tag.
 ```bash
 echo "v1.0.1" > app-managed/.version
 python3 build_and_push.py app-managed
+# then update managed_app_image_tag in terraform/eks-infra/terraform.tfvars and terraform apply
 ```
 
 ## Local smoke test with Docker Compose
 
 [app/docker-compose.yml](../app/docker-compose.yml) wires both apps up so you can verify them in a browser before pushing anything to ECR or deploying to EKS:
 
-| Service       | Host port | Container port |
-| ------------- | --------- | -------------- |
-| `app-managed` | `8081`    | `80`           |
-| `app-fargate` | `8082`    | `80`           |
+| Service       | Host port | Container port | Page content   |
+| ------------- | --------- | -------------- | -------------- |
+| `app-fargate` | `8081`    | `80`           | time + hostname |
+| `app-managed` | `8082`    | `80`           | param store + hostname |
 
-`PARAMS_STORE` is injected for `app-fargate` from the `environment:` block of the compose file, so the page has something to render locally.
+`PARAMS_STORE` is injected for `app-managed` from the `environment:` block of the compose file (`PARAMS_STORE: "LOCAL VALUE"`).
 
 ### Run
 
@@ -131,8 +135,8 @@ docker compose up -d --build
 
 Then open:
 
-- <http://localhost:8081> -> `app-managed`
-- <http://localhost:8082> -> `app-fargate`
+- <http://localhost:8081> -> `app-fargate` (time)
+- <http://localhost:8082> -> `app-managed` (param store)
 
 The dev container forwards ports `8081` and `8082` automatically (see [docs/development.md](development.md#forwarded-ports)), so the URLs work from the host browser even when you're running compose inside the dev container.
 
@@ -154,4 +158,15 @@ docker compose down
 
 ## Note on `PARAMS_STORE`
 
-For local runs, `PARAMS_STORE` comes from `docker-compose.yml` (`PARAMS_STORE: "LOCAL VALUE"`). On AWS the variable will be supplied by a different mechanism (e.g. SSM Parameter Store via the Secrets Store CSI Driver), but the application code itself doesn't care - it just reads `getenv('PARAMS_STORE')`.
+For local runs, `app-managed` gets `PARAMS_STORE` from `docker-compose.yml`. On EKS, Terraform creates an SSM parameter and passes the value into a Kubernetes Secret via Helm — see [docs/infra-app.md](infra-app.md). The PHP code always reads `getenv('PARAMS_STORE')` regardless of source.
+
+## On EKS (after terraform apply)
+
+Both apps are deployed automatically by the app module. Access via the shared ALB:
+
+| App | ALB port |
+| --- | -------- |
+| `app-fargate` | `8081` |
+| `app-managed` | `8082` |
+
+See [docs/infra-app.md](infra-app.md) for ALB hostname lookup and verification.

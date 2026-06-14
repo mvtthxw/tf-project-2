@@ -79,11 +79,11 @@
   "forwardPorts": [8081, 8082],
   "portsAttributes": {
     "8081": {
-      "label": "app-managed (PHP)",
+      "label": "app-fargate (PHP)",
       "onAutoForward": "notify"
     },
     "8082": {
-      "label": "app-fargate (PHP)",
+      "label": "app-managed (PHP)",
       "onAutoForward": "notify"
     }
   },

@@ -92,7 +92,7 @@ Role name prefix: `<username>-<repo>-<environment>` ([locals.tf](../terraform/ek
 - `cloudProvider = aws`
 - `rbac.serviceAccount.create = false`, `rbac.serviceAccount.name = cluster-autoscaler`
 
-**Use case:** when pods cannot be scheduled due to insufficient capacity, the autoscaler adds nodes up to `eks.node_group_max_size` (default `2`). When nodes are underutilised, it scales back down to `eks.node_group_min_size` (default `1`).
+**Use case:** when pods cannot be scheduled due to insufficient capacity, the autoscaler adds nodes up to `eks.node_group_max_size` (default `3`). When nodes are underutilised, it scales back down to `eks.node_group_min_size` (default `1`).
 
 Requires the Cluster Autoscaler tags on the EKS cluster (set in the eks module - see [docs/infra-eks.md](infra-eks.md#cluster-autoscaler-tags)).
 
@@ -145,7 +145,7 @@ Two separate Helm releases plus custom RBAC for the AWS provider.
 - `ClusterRole` - allows `get` on `serviceaccounts`
 - `ClusterRoleBinding` - binds the role to the provider ServiceAccount
 
-**Use case:** mount values from **AWS SSM Parameter Store** into pods via a `SecretProviderClass`. This is the intended future replacement for the hard-coded `PARAMS_STORE` env var in `app-fargate` (currently set locally via `docker-compose.yml` - see [docs/app.md](app.md)).
+**Use case:** mount values from **AWS SSM Parameter Store** into pods via a `SecretProviderClass`. The driver is installed and ready, but the current app charts use a simpler path: `app-managed` receives `PARAMS_STORE` via a Kubernetes Secret populated by Terraform (see [docs/infra-app.md](infra-app.md)). Wiring CSI into the charts is a possible future enhancement.
 
 **Install order:** driver Helm release first, then AWS provider (explicit `depends_on` in Terraform).
 

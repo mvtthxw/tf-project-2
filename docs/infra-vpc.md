@@ -57,6 +57,17 @@ Private subnets are offset by 10 in the subnet index so public and private range
 - **No VPN gateway** (`enable_vpn_gateway = false`).
 - **Public IPs on launch** (`map_public_ip_on_launch = true`) - instances in public subnets get a public IP automatically.
 
+## Subnet tags for EKS / ALB
+
+Subnets are tagged for AWS Load Balancer Controller and EKS subnet discovery ([vpc.tf](../terraform/eks-infra/modules/network/vpc.tf)):
+
+| Subnet type | Tags |
+| ----------- | ---- |
+| Public | `kubernetes.io/role/elb = 1`, `kubernetes.io/cluster/<cluster_name> = shared` |
+| Private | `kubernetes.io/role/internal-elb = 1`, `kubernetes.io/cluster/<cluster_name> = shared` |
+
+`<cluster_name>` is `<prefix>-eks` (e.g. `mvtthxw-k8s-php-infra-dev-eks`), defined in [locals.tf](../terraform/eks-infra/modules/network/locals.tf). These tags allow the ALB controller to place internet-facing and internal load balancers in the correct subnets.
+
 ## Outputs
 
 The module exposes standard VPC outputs via [outputs.tf](../terraform/eks-infra/modules/network/outputs.tf). These are re-exported at the root stack level in [terraform/eks-infra/outputs.tf](../terraform/eks-infra/outputs.tf).

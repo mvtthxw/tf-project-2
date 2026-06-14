@@ -156,7 +156,7 @@ A common session from zero to a running cluster:
    ```bash
    cd app
    docker compose up -d --build
-   # http://localhost:8081 and http://localhost:8082
+   # http://localhost:8081 (app-fargate) and http://localhost:8082 (app-managed)
    ```
 
 4. Apply the ECR stack and push images (see [docs/infra.md](infra.md)):
@@ -169,14 +169,16 @@ A common session from zero to a running cluster:
    python3 build_and_push.py
    ```
 
-5. Apply the EKS infrastructure stack (VPC, cluster, Helm controllers):
+5. Apply the EKS infrastructure stack (VPC, cluster, controllers, and both apps):
 
    ```bash
    cd terraform/eks-infra
    terraform apply
    ```
 
-   This step can take a while (cluster creation, node group, Helm releases). Timeouts are set to up to 45 minutes - do not interrupt the apply. See [docs/infra.md](infra.md) for the full recommended order and verification checklist.
+   This step can take a while (cluster creation, node group, multiple Helm releases). Timeouts are set to up to 45 minutes - do not interrupt the apply. See [docs/infra.md](infra.md) for the full recommended order and verification checklist.
+
+6. Open the apps via the ALB hostname (ports `8081` / `8082`) — see [docs/infra-app.md](infra-app.md).
 
 See [docs/app.md](app.md) for versioning, compose details and the full `build_and_push.py` reference.
 
@@ -184,8 +186,8 @@ See [docs/app.md](app.md) for versioning, compose details and the full `build_an
 
 Two ports are forwarded automatically so the local PHP apps are reachable from the host browser:
 
-- `8081` -> `app-managed`
-- `8082` -> `app-fargate`
+- `8081` -> `app-fargate` (time page)
+- `8082` -> `app-managed` (param store page)
 
 See [docs/app.md](app.md) for how to run the apps locally.
 

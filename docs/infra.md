@@ -1,11 +1,11 @@
 # Infrastructure
 
-All AWS infrastructure is defined as Terraform code under [terraform/](../terraform). It is intentionally split into **two independent stacks** so the expensive part (EKS + VPC + controllers) can be torn down between work sessions while the cheap part (ECR repositories and the images stored in them) survives.
+All AWS infrastructure is defined as Terraform code under [terraform/](../terraform). It is intentionally split into **two independent stacks** so the expensive part (EKS + VPC + controllers + apps) can be torn down between work sessions while the cheap part (ECR repositories and the images stored in them) survives.
 
 ```
 terraform/
 ├── ecr/         # AWS ECR repositories for the two apps
-└── eks-infra/   # VPC + EKS cluster + Helm controllers
+└── eks-infra/   # VPC + EKS + controllers + application Helm releases
 ```
 
 ## Why two stacks?
@@ -44,19 +44,20 @@ Outputs ([terraform/ecr/outputs.tf](../terraform/ecr/outputs.tf)) expose:
 
 ## `terraform/eks-infra/` overview
 
-The EKS stack is organised as three Terraform modules orchestrated from [terraform/eks-infra/main.tf](../terraform/eks-infra/main.tf):
+The EKS stack is organised as four Terraform modules orchestrated from [terraform/eks-infra/main.tf](../terraform/eks-infra/main.tf):
 
 ```
 terraform/eks-infra/
-├── main.tf              # orchestrates 3 modules
-├── variables.tf         # general / vpc / eks objects
+├── main.tf              # orchestrates 4 modules
+├── variables.tf         # general / vpc / eks / app objects
 ├── terraform.tfvars
 ├── versions.tf          # aws + kubernetes + helm providers
 ├── outputs.tf           # re-exports from all modules
 └── modules/
     ├── network/         # VPC
     ├── eks/             # EKS cluster + addons + VPC CNI IRSA
-    └── controllers/     # Helm: ALB, Cluster Autoscaler, Secrets Store CSI
+    ├── controllers/     # Helm: ALB, Cluster Autoscaler, Secrets Store CSI
+    └── app/             # Helm: app-managed + app-fargate + SSM parameter
 ```
 
 ### Module dependencies
@@ -68,16 +69,20 @@ flowchart TB
   root[eks-infra root] --> network[module network]
   root --> eks[module eks]
   root --> controllers[module controllers]
+  root --> app[module app]
   network -->|vpc_id private_subnets| eks
   eks -->|cluster_name oidc_provider_arn| controllers
   network -->|vpc_id| controllers
+  controllers --> app
+  eks --> app
 ```
 
 1. **network** - VPC, subnets, NAT gateway (no cluster dependency).
 2. **eks** - EKS control plane, node group, Fargate profile, core addons (needs VPC outputs).
-3. **controllers** - Helm releases for cluster add-ons (needs EKS API endpoint and OIDC provider; `depends_on = [module.eks]`).
+3. **controllers** - Helm releases for cluster add-ons (needs EKS API endpoint and OIDC provider).
+4. **app** - SSM parameter + Helm releases for both PHP apps (needs ALB controller and ECR images).
 
-The root stack configures **kubernetes** and **helm** providers ([versions.tf](../terraform/eks-infra/versions.tf)) using the EKS cluster endpoint and auth token, which is what allows the controllers module to install Helm charts during apply.
+The root stack configures **kubernetes** and **helm** providers ([versions.tf](../terraform/eks-infra/versions.tf)) using the EKS cluster endpoint and auth token.
 
 ### Configuration format
 
@@ -97,12 +102,25 @@ vpc = {
 }
 
 eks = {
-  cluster_version           = "1.35"
+  cluster_version           = "1.36"
   node_group_disk_size      = 20
   node_group_min_size       = 1
-  node_group_max_size       = 2
+  node_group_max_size       = 3
   node_group_desired_size   = 1
-  node_group_instance_types = ["t3.medium"]
+  node_group_instance_types = ["t4g.medium"]
+}
+
+app = {
+  managed_app_ecr_repo_name = "mvtthxw-k8s-php-dev-app-managed"
+  managed_app_image_tag     = "v1.0.0"
+  managed_app_namespace     = "managed-apps"
+  managed_app_replica_count = 1
+  managed_app_ssm_value     = "Example value"
+
+  fargate_app_ecr_repo_name = "mvtthxw-k8s-php-dev-app-fargate"
+  fargate_app_image_tag     = "v1.0.0"
+  fargate_app_namespace     = "fargate-apps"
+  fargate_app_replica_count = 1
 }
 ```
 
@@ -113,6 +131,8 @@ Default tags (`Owner`, `Repo`, `Environment`, `ManagedBy = Terraform`) are appli
 - [docs/infra-vpc.md](infra-vpc.md) - VPC / network module (`modules/network/`)
 - [docs/infra-eks.md](infra-eks.md) - EKS cluster module (`modules/eks/`)
 - [docs/infra-controllers.md](infra-controllers.md) - Helm controllers (`modules/controllers/`)
+- [docs/infra-app.md](infra-app.md) - Application Helm releases + SSM (`modules/app/`)
+- [docs/helm.md](helm.md) - Local Helm chart reference (`helm/`)
 
 ## Remote state
 
@@ -143,23 +163,23 @@ terraform apply
    terraform apply
    ```
 
-2. **Build and push images** to ECR (see [docs/app.md](app.md)):
+2. **Build and push images** to ECR (see [docs/app.md](app.md)). Tags must match `app.*_app_image_tag` in `terraform.tfvars`:
 
    ```bash
    cd app
    python3 build_and_push.py
    ```
 
-3. **Apply `eks-infra`** to bring up VPC, EKS and controllers in one run:
+3. **Apply `eks-infra`** to bring up VPC, EKS, controllers, and both apps in one run:
 
    ```bash
    cd terraform/eks-infra
    terraform apply
    ```
 
-   This step can take a while (cluster creation, node group, Helm releases). Timeouts are set to up to 45 minutes for the cluster and node group - do not interrupt the apply.
+   This step can take a while (cluster creation, node group, multiple Helm releases). Timeouts are set to up to 45 minutes for the cluster and node group - do not interrupt the apply.
 
-4. Deploy application workloads (Helm charts for the PHP apps, when available).
+4. **Verify** apps are reachable via the shared ALB (see [docs/infra-app.md](infra-app.md#ingress--alb-access)).
 
 5. **Destroy `eks-infra` when done** to stop the EKS / NAT / node bill:
 
@@ -188,12 +208,17 @@ The cluster name is `<username>-<repo>-<environment>-eks` based on the `general`
 kubectl get nodes
 kubectl get pods -n kube-system
 helm list -n kube-system
+kubectl get pods -n managed-apps
+kubectl get pods -n fargate-apps
+kubectl get ingress -A
 ```
 
 After that:
 
-- `kubectl get nodes` should list the managed node group node.
+- `kubectl get nodes` should list ARM managed node group nodes (`t4g.medium`).
 - `kubectl get pods -n kube-system` should show core addons and controller pods running.
 - `helm list -n kube-system` should list the AWS Load Balancer Controller, Cluster Autoscaler, and Secrets Store CSI releases.
+- `kubectl get pods -n managed-apps` and `-n fargate-apps` should show the PHP app pods.
+- `kubectl get ingress -A` should show ALB hostnames for both apps.
 
-See [docs/infra-controllers.md](infra-controllers.md) for controller-specific verification commands.
+See [docs/infra-controllers.md](infra-controllers.md) and [docs/infra-app.md](infra-app.md) for module-specific verification.

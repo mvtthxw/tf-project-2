@@ -8,7 +8,7 @@ The **eks** module provisions the EKS control plane, a managed node group, a Far
 
 **Depends on:** network module outputs (`vpc_id`, `private_subnets`).
 
-See also: [docs/infra.md](infra.md) | [docs/infra-vpc.md](infra-vpc.md) | [docs/infra-controllers.md](infra-controllers.md)
+See also: [docs/infra.md](infra.md) | [docs/infra-vpc.md](infra-vpc.md) | [docs/infra-controllers.md](infra-controllers.md) | [docs/infra-app.md](infra-app.md)
 
 ## Purpose
 
@@ -39,14 +39,14 @@ Built with `terraform-aws-modules/eks/aws` **v21.20.0** - see [eks.tf](../terraf
 
 Set via the `eks` object in [terraform/eks-infra/terraform.tfvars](../terraform/eks-infra/terraform.tfvars):
 
-| Variable                        | Default           | Notes                              |
-| ------------------------------- | ----------------- | ---------------------------------- |
-| `eks.cluster_version`           | `1.35`            | Kubernetes version                 |
-| `eks.node_group_desired_size`   | `1`               | Target node count                  |
-| `eks.node_group_min_size`       | `1`               | Minimum (Cluster Autoscaler floor) |
-| `eks.node_group_max_size`       | `2`               | Maximum (Cluster Autoscaler ceiling) |
-| `eks.node_group_disk_size`      | `20`              | GB per node                        |
-| `eks.node_group_instance_types` | `["t3.medium"]`   | On-demand instances                |
+| Variable                        | Default             | Notes                              |
+| ------------------------------- | ------------------- | ---------------------------------- |
+| `eks.cluster_version`           | `1.36`              | Kubernetes version                 |
+| `eks.node_group_desired_size`   | `1`                 | Target node count                  |
+| `eks.node_group_min_size`       | `1`                 | Minimum (Cluster Autoscaler floor) |
+| `eks.node_group_max_size`       | `3`                 | Maximum (Cluster Autoscaler ceiling) |
+| `eks.node_group_disk_size`      | `20`                | GB per node                        |
+| `eks.node_group_instance_types` | `["t4g.medium"]`    | On-demand ARM (Graviton) instances |
 
 ## Cluster settings
 
@@ -62,8 +62,10 @@ Set via the `eks` object in [terraform/eks-infra/terraform.tfvars](../terraform/
 Single node group keyed by `local.eks_managed_node_group_name`:
 
 - **Capacity type:** ON_DEMAND
+- **AMI:** `AL2023_ARM_64_STANDARD` (Amazon Linux 2023, ARM64)
 - **IAM:** role created per node group, CNI policy attached (`iam_role_attach_cni_policy = true`)
-- **Scaling:** min / desired / max from `terraform.tfvars` (defaults: 1 / 1 / 2)
+- **Scaling:** min / desired / max from `terraform.tfvars` (defaults: 1 / 1 / 3)
+- **Labels:** `node-group-label = <username>-node-group` on each node
 
 The Cluster Autoscaler (installed by the controllers module) can scale the group between `min_size` and `max_size` based on pending pods.
 
