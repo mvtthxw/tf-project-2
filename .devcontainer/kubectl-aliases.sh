@@ -1,4 +1,4 @@
-# kubectl shortcuts for tf-project-2 devcontainer
+# kubectl shortcuts for tf-eks-php-apps devcontainer
 # Sourced from ~/.bashrc via setup-shell.sh
 
 # Core

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ALIASES_MARKER="kubectl-aliases.sh"
-ALIASES_PATH="/workspaces/tf-project-2/.devcontainer/kubectl-aliases.sh"
+ALIASES_PATH="/workspaces/tf-eks-php-apps/.devcontainer/kubectl-aliases.sh"
 
 if ! grep -q "$ALIASES_MARKER" "$HOME/.bashrc" 2>/dev/null; then
   echo "source \"$ALIASES_PATH\"" >> "$HOME/.bashrc"

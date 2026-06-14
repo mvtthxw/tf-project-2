@@ -1,5 +1,5 @@
 {
-  "name": "tf-project-2 (Terraform / EKS / Helm / PHP)",
+  "name": "tf-eks-php-apps (Terraform / EKS / Helm / PHP)",
   "image": "mcr.microsoft.com/devcontainers/base:jammy",
 
   "features": {
@@ -93,7 +93,7 @@
   ],
 
   "mounts": [
-    "source=cursor-state-tf-project-2,target=/home/vscode/.cursor,type=volume"
+    "source=cursor-state-tf-eks-php-apps,target=/home/vscode/.cursor,type=volume"
   ],
 
   "postCreateCommand": "bash ${containerWorkspaceFolder}/.devcontainer/install-k8s-tools.sh && bash ${containerWorkspaceFolder}/.devcontainer/setup-shell.sh",

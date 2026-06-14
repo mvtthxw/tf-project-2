@@ -1,4 +1,4 @@
-# tf-project-2
+# tf-eks-php-apps
 
 EKS-based playground running two small PHP demo apps (`app-managed` and `app-fargate`). Infrastructure is described as Terraform code split into two independent stacks - an **ECR** stack for the container registries and an **EKS + VPC** stack for the cluster, controllers, and app deployments - so the expensive part can be torn down between sessions while the images stay around. Local development happens inside a Dev Container with Terraform, AWS CLI, kubectl, Helm, PHP, Python and Docker-in-Docker preinstalled.
 

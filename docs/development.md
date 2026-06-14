@@ -193,4 +193,4 @@ See [docs/app.md](app.md) for how to run the apps locally.
 
 ## Persistent Cursor state
 
-The dev container mounts a named Docker volume `cursor-state-tf-project-2` at `/home/vscode/.cursor`. This keeps Cursor's chat history, plans and transcripts across container rebuilds - rebuilding the container won't wipe your conversation state.
+The dev container mounts a named Docker volume `cursor-state-tf-eks-php-apps` at `/home/vscode/.cursor`. This keeps Cursor's chat history, plans and transcripts across container rebuilds - rebuilding the container won't wipe your conversation state.
